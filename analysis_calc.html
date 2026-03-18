@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수질/폐기물 분석 자동 계산기</title>
+    <style>
+        :root {
+            --bg-color: #bed0ca;
+            --card-bg: #ffffff;
+            --primary: #3498db;
+            --dark-blue: #2c3e50;
+            --result-accent: #1d4ed8;
+            --result-bg: #d8dfe9;
+            --border-color: #e2e8f0;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --formula-bg: #f0e9f1;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--dark-blue);
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 15px;
+            align-items: start;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 15px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: var(--dark-blue);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            font-size: 1.05rem;
+        }
+
+        .header-num {
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            margin-right: 8px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        .input-group input {
+            padding: 4px 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            width: 66%;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .formula-box {
+            background-color: var(--formula-bg);
+            border: 1px dashed #cbd5e1;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        .formula-box span {
+            color: var(--dark-blue);
+            font-weight: bold;
+        }
+
+        .result-box {
+            background-color: var(--result-bg);
+            border-left: 3px solid var(--result-accent);
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .result-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-val {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--result-accent);
+        }
+
+        .unit {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>수질/폐기물 분석 자동 계산기</h1>
+
+    <div class="grid-container">
+        
+        <div class="card" oninput="update1()">
+            <div class="card-header"><div class="header-num">1</div>산/알칼리 혼합 pH</div>
+            <div class="input-grid">
+                <div class="input-group"><label>산 (mol)</label><input type="number" id="c1_m_a" value="2.4" step="0.1"></div>
+                <div class="input-group"><label>산 부피 (L)</label><input type="number" id="c1_v_a" value="1" step="0.1"></div>
+                <div class="input-group"><label>알칼리 (mol)</label><input type="number" id="c1_m_b" value="2.2" step="0.1"></div>
+                <div class="input-group"><label>알칼리 부피 (L)</label><input type="number" id="c1_v_b" value="2" step="0.1"></div>
+            </div>
+            <div class="formula-box" id="formula1_text">
+                </div>
+            <div class="result-box">
+                <div class="result-row"><span id="label_ion">[OH⁻] 농도:</span><span class="result-val" id="r1_ion">-</span></div>
+                <div class="result-row"><span id="label_p1">pOH:</span><span class="result-val" id="r1_p1">-</span></div>
+                <div class="result-row"><span id="label_p2">pH:</span><span class="result-val" id="r1_p2">-</span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update2()">
+            <div class="card-header"><div class="header-num">2</div>TN / TP 분석</div>
+            <div class="input-grid">
+                <div class="input-group"><label>검량선 농도 (mg)</label><input type="number" id="c2_c" value="0.02" step="0.01"></div>
+                <div class="input-group"><label>총 증류량 (mL)</label><input type="number" id="c2_t" value="60"></div>
+                <div class="input-group"><label>분취량 (mL)</label><input type="number" id="c2_a" value="25"></div>
+                <div class="input-group"><label>전처리 시료량 (mL)</label><input type="number" id="c2_p" value="5"></div>
+            </div>
+            <div class="formula-box">
+                <span id="f2_c">0.02</span> * (<span id="f2_t">60</span> / <span id="f2_a">25</span>) * (1000 / <span id="f2_p">5</span>)
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>최종 농도:</span><span class="result-val" id="r2_val">- <span class="unit">mg/L</span></span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update3()">
+            <div class="card-header"><div class="header-num">3</div>TP 전처리 없이</div>
+            <div class="input-grid">
+                <div class="input-group"><label>검량선 농도 (mg)</label><input type="number" id="c3_c" value="0.02" step="0.01"></div>
+                <div class="input-group"><label>샘플 사용량 (mL)</label><input type="number" id="c3_s" value="5"></div>
+            </div>
+            <div class="formula-box">
+                <span id="f3_c">0.02</span> * (1000 / <span id="f3_s">5</span>)
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>최종 농도:</span><span class="result-val" id="r3_val">- <span class="unit">mg/L</span></span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update4()">
+            <div class="card-header"><div class="header-num">4</div>F⁻, Phenol, CN</div>
+            <div class="input-grid">
+                <div class="input-group"><label>검량선 농도 (mg)</label><input type="number" id="c4_c" value="0.025" step="0.005"></div>
+                <div class="input-group"><label>총 증류량 (mL)</label><input type="number" id="c4_td" value="200"></div>
+                <div class="input-group"><label>증류 시료량 (mL)</label><input type="number" id="c4_sd" value="200"></div>
+                <div class="input-group"><label>발색 시료량 (mL)</label><input type="number" id="c4_cs" value="0.1" step="0.1"></div>
+            </div>
+            <div class="formula-box">
+                <span id="f4_c">0.025</span> * (<span id="f4_td">200</span> / <span id="f4_sd">200</span>) * (1000 / <span id="f4_cs">0.1</span>)
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>최종 농도:</span><span class="result-val" id="r4_val">- <span class="unit">mg/L</span></span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update5()">
+            <div class="card-header"><div class="header-num">5</div>NH₃-N, Cr⁺⁶</div>
+            <div class="input-grid">
+                <div class="input-group"><label>검량선 농도 (mg)</label><input type="number" id="c5_c" value="0.4" step="0.1"></div>
+                <div class="input-group"><label>시료량 (mL)</label><input type="number" id="c5_s" value="10"></div>
+            </div>
+            <div class="formula-box">
+                <span id="f5_c">0.4</span> * (1000 / <span id="f5_s">10</span>)
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>최종 농도:</span><span class="result-val" id="r5_val">- <span class="unit">mg/L</span></span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update6()">
+            <div class="card-header"><div class="header-num">6</div>Cl⁻ (염소이온)</div>
+            <div class="input-grid">
+                <div class="input-group"><label>0.1N AgNO₃ 적정량 (mL)</label><input type="number" id="c6_a" value="2.5" step="0.1"></div>
+                <div class="input-group"><label>바탕시험 소비량 (mL)</label><input type="number" id="c6_b" value="0.05" step="0.01"></div>
+                <div class="input-group"><label>시료량 (mL)</label><input type="number" id="c6_s" value="2" step="0.1"></div>
+            </div>
+            <div class="formula-box">
+                (<span id="f6_a">2.5</span> - <span id="f6_b">0.05</span>) * 3.545 * (1000 / <span id="f6_s">2</span>)
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>최종 농도:</span><span class="result-val" id="r6_val">- <span class="unit">mg/L</span></span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update7()">
+            <div class="card-header"><div class="header-num">7</div>N농도 적정</div>
+            <div class="input-grid">
+                <div class="input-group"><label>표준액 농도 (N)</label><input type="number" id="c7_n" value="2" step="0.1"></div>
+                <div class="input-group"><label>적정 소비량 (mL)</label><input type="number" id="c7_v" value="4" step="0.1"></div>
+                <div class="input-group"><label>샘플량 (mL)</label><input type="number" id="c7_s" value="10"></div>
+                <div class="input-group"><label>샘플 희석배수</label><input type="number" id="c7_d" value="1"></div>
+            </div>
+            <div class="formula-box">
+                ((<span id="f7_n">2</span> * <span id="f7_v">4</span>) / <span id="f7_s">10</span>) * <span id="f7_d">1</span>
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>샘플 N농도:</span><span class="result-val" id="r7_val">- <span class="unit">N</span></span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update8()">
+            <div class="card-header"><div class="header-num">8</div>폐기물 농도 계산</div>
+            <div class="input-grid">
+                <div class="input-group"><label>용출액 농도 (mg/L)</label><input type="number" id="c8_c" value="4" step="0.1"></div>
+                <div class="input-group"><label>용출액량 (mL)</label><input type="number" id="c8_v" value="100"></div>
+                <div class="input-group"><label>시료 사용량 (g)</label><input type="number" id="c8_w" value="0.5" step="0.1"></div>
+            </div>
+            <div class="formula-box">
+                <span id="f8_c">4</span> * (1L/1000mL) * <span id="f8_v">100</span>mL / <span id="f8_w">0.5</span>g * (1000g/1kg)
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>폐기물 농도:</span><span class="result-val" id="r8_val">- <span class="unit">mg/kg</span></span></div>
+            </div>
+        </div>
+
+        <div class="card" oninput="update9()">
+            <div class="card-header"><div class="header-num">9</div>총경도 및 Ca, Mg 환산</div>
+            <div class="input-grid">
+                <div class="input-group"><label>0.01M EDTA 적정량 (mL)</label><input type="number" id="c9_e" value="4.5" step="0.1"></div>
+                <div class="input-group"><label>MgCl 첨가량 (mL)</label><input type="number" id="c9_m" value="1.0" step="0.1"></div>
+                <div class="input-group"><label>시료량 (mL)</label><input type="number" id="c9_s" value="2"></div>
+            </div>
+            <div class="formula-box">
+                경도 = (<span id="f9_e">4.5</span> - <span id="f9_m">1.0</span>) * (1000 / <span id="f9_s">2</span>)
+            </div>
+            <div class="result-box">
+                <div class="result-row"><span>총경도:</span><span class="result-val" id="r9_h">- <span class="unit">mg/L</span></span></div>
+                <div class="result-row"><span>Ca 환산:</span><span class="result-val" id="r9_ca">- <span class="unit">mg/L</span></span></div>
+                <div class="result-row"><span>Mg 환산:</span><span class="result-val" id="r9_mg">- <span class="unit">mg/L</span></span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+// 숫자 포맷팅 (매우 작은 숫자는 유효숫자 4자리 보존, 그 외에는 최대 소수점 4자리)
+const fmt = (num) => {
+    if (isNaN(num)) return '-';
+    if (num === 0) return '0';
+    // 절대값이 0.001보다 작으면 유효숫자 4자리(toPrecision) 사용, 아니면 소수점 4자리(toFixed) 사용
+    return Math.abs(num) < 0.001 ? Number(num.toPrecision(4)).toString() : Number(num.toFixed(4)).toString();
+};
+
+        function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+        function setT(id, text) { document.getElementById(id).innerText = text; }
+
+        // 1) 산/알칼리 혼합 pH 업데이트 로직 (동적 라벨 및 식 변경 포함)
+        function update1() {
+            let ma = val('c1_m_a'), va = val('c1_v_a'), mb = val('c1_m_b'), vb = val('c1_v_b');
+            let v_total = va + vb;
+            
+            let f_box = document.getElementById('formula1_text');
+            let l_ion = document.getElementById('label_ion');
+            let l_p1 = document.getElementById('label_p1');
+            let l_p2 = document.getElementById('label_p2');
+            let r_ion = document.getElementById('r1_ion');
+            let r_p1 = document.getElementById('r1_p1');
+            let r_p2 = document.getElementById('r1_p2');
+
+            if (mb > ma) {
+                // 알칼리성
+                let oh = (mb - ma) / v_total;
+                let poh = -Math.log10(oh);
+                let ph = 14 - poh;
+
+                f_box.innerHTML = `[OH⁻] = (<span>${mb}</span> - <span>${ma}</span>) / (<span>${va}</span> + <span>${vb}</span>)`;
+                l_ion.innerText = "[OH⁻] 농도:";
+                l_p1.innerText = "pOH:";
+                l_p2.innerText = "pH:";
+                
+                r_ion.innerHTML = `${fmt(oh)} <span class="unit">M</span>`;
+                r_p1.innerText = fmt(poh);
+                r_p2.innerText = fmt(ph);
+                
+            } else if (ma > mb) {
+                // 산성
+                let h = (ma - mb) / v_total;
+                let ph = -Math.log10(h);
+                let poh = 14 - ph;
+
+                f_box.innerHTML = `[H⁺] = (<span>${ma}</span> - <span>${mb}</span>) / (<span>${va}</span> + <span>${vb}</span>)`;
+                l_ion.innerText = "[H⁺] 농도:";
+                l_p1.innerText = "pH:";
+                l_p2.innerText = "pOH:";
+                
+                r_ion.innerHTML = `${fmt(h)} <span class="unit">M</span>`;
+                r_p1.innerText = fmt(ph);
+                r_p2.innerText = fmt(poh);
+                
+            } else {
+                // 중성
+                f_box.innerHTML = `[H⁺] = [OH⁻] = 10⁻⁷ (중성)`;
+                l_ion.innerText = "상태:";
+                l_p1.innerText = "pH:";
+                l_p2.innerText = "pOH:";
+                
+                r_ion.innerHTML = `완전 중화 <span class="unit"></span>`;
+                r_p1.innerText = "7";
+                r_p2.innerText = "7";
+            }
+        }
+
+        function update2() {
+            let c=val('c2_c'), t=val('c2_t'), a=val('c2_a'), p=val('c2_p');
+            setT('f2_c', c); setT('f2_t', t); setT('f2_a', a); setT('f2_p', p);
+            setT('r2_val', fmt(c * (t/a) * (1000/p)));
+        }
+
+        function update3() {
+            let c=val('c3_c'), s=val('c3_s');
+            setT('f3_c', c); setT('f3_s', s);
+            setT('r3_val', fmt(c * (1000/s)));
+        }
+
+        function update4() {
+            let c=val('c4_c'), td=val('c4_td'), sd=val('c4_sd'), cs=val('c4_cs');
+            setT('f4_c', c); setT('f4_td', td); setT('f4_sd', sd); setT('f4_cs', cs);
+            setT('r4_val', fmt(c * (td/sd) * (1000/cs)));
+        }
+
+        function update5() {
+            let c=val('c5_c'), s=val('c5_s');
+            setT('f5_c', c); setT('f5_s', s);
+            setT('r5_val', fmt(c * (1000/s)));
+        }
+
+        function update6() {
+            let a=val('c6_a'), b=val('c6_b'), s=val('c6_s');
+            setT('f6_a', a); setT('f6_b', b); setT('f6_s', s);
+            setT('r6_val', fmt((a - b) * 3.545 * (1000/s)));
+        }
+
+        function update7() {
+            let n=val('c7_n'), v=val('c7_v'), s=val('c7_s'), d=val('c7_d');
+            setT('f7_n', n); setT('f7_v', v); setT('f7_s', s); setT('f7_d', d);
+            setT('r7_val', fmt(((n * v) / s) * d));
+        }
+
+        function update8() {
+            let c=val('c8_c'), v=val('c8_v'), w=val('c8_w');
+            setT('f8_c', c); setT('f8_v', v); setT('f8_w', w);
+            setT('r8_val', fmt(c * (1/1000) * v / w * 1000));
+        }
+
+        function update9() {
+            let e=val('c9_e'), m=val('c9_m'), s=val('c9_s');
+            setT('f9_e', e); setT('f9_m', m); setT('f9_s', s);
+            let h = (e - m) * (1000/s);
+            setT('r9_h', fmt(h)); setT('r9_ca', fmt(h * 0.4)); setT('r9_mg', fmt(h * 0.243));
+        }
+
+        // 초기 로드 시 전체 계산 실행
+        window.onload = function() {
+            update1(); update2(); update3(); update4(); update5(); 
+            update6(); update7(); update8(); update9();
+        };
+    </script>
+</body>
+</html>
