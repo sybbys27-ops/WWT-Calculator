@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>폐수 분석 계산기</title>
+  <style>
+    :root {
+      --bg: #dee6ed;
+      --card: #ffffff;
+      --line: #cfd9e6;
+      --text: #1f2a37;
+      --muted: #5f6f82;
+      --accent: #2f6fed;
+      --accent-2: #7c9cff;
+      --input-bg: #f7fbff;
+      --input-border: #c9d9ef;
+      --soft: #edf4ff;
+      --result: #fff5e8;
+      --result-border: #f5c98f;
+      --fixed-bg: #edf2ff;
+      --fixed-text: #35528f;
+      --card-shadow: 0 8px 22px rgba(47, 111, 237, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: white;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      color: #173056;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .row-1 { grid-template-columns: 1fr; }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #28415f;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+      min-height: 38px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.12);
+    }
+
+    input[readonly] {
+      background: #eef4fb;
+      color: #5b6d82;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .formula,
+    .result {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-line;
+      word-break: break-word;
+      font-weight: 400;
+    }
+
+    .formula {
+      background: var(--soft);
+      border: 1px solid #d4e4ff;
+      color: #27446c;
+    }
+
+    .result {
+      background: var(--result);
+      border: 1px solid var(--result-border);
+      color: #6b3d08;
+    }
+
+    .fixed {
+      display: inline-block;
+      margin: 2px 6px 8px 0;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--fixed-bg);
+      font-size: 11px;
+      color: var(--fixed-text);
+      font-weight: 700;
+      border: 1px solid #d6e0ff;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 720px) {
+      .row { grid-template-columns: 1fr; }
+      h1 { font-size: 24px; }
+      .wrap { padding: 14px; }
+      .formula,
+      .result { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>폐수 분석 계산기</h1>
+    <div class="subtitle">
+      손글씨 계산 방식을 참고해 구성했습니다. 검량선 농도, 적정량, 시료량을 입력하면 결과와 계산식을 바로 확인할 수 있습니다.
+    </div>
+
+    <div class="toolbar">
+      <button class="btn primary" onclick="calculateAll()">전체 계산</button>
+      <button class="btn" onclick="resetAll()">전체 초기화</button>
+    </div>
+
+    <div class="grid">
+      <section class="card" id="card-ph">
+        <h2>1) 산/알칼리 혼합 pH</h2>
+        <div class="hint">산과 알칼리 몰수 차이로 남는 성분을 계산한 뒤, 총 부피로 나누어 pH/pOH를 구합니다.</div>
+        <div class="row">
+          <label>산 몰수 (mol)<input id="acidMol" type="number" step="0.1" value="2.0" placeholder="예: 2" /></label>
+          <label>산 부피 (L)<input id="acidVol" type="number" step="0.1" value="1.0" placeholder="예: 1" /></label>
+        </div>
+        <div class="row">
+          <label>알칼리 몰수 (mol)<input id="baseMol" type="number" step="0.1" value="2.2" placeholder="예: 2.2" /></label>
+          <label>알칼리 부피 (L)<input id="baseVol" type="number" step="0.1" value="2.0" placeholder="예: 2" /></label>
+        </div>
+        <div class="row row-1">
+          <label>총 부피 합계 (L)<input id="totalVolPH" type="number" step="0.1" readonly value="3.0" placeholder="자동 계산" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcPH()">계산</button>
+          <button class="btn" onclick="clearCard('card-ph')">초기화</button>
+        </div>
+        <div class="formula" id="formula-ph">계산식: 남는 몰수 = |알칼리 - 산|, 농도 = 남는 몰수 / 총 부피</div>
+        <div class="result" id="result-ph">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-tntp">
+        <h2>2) TN / TP 분석</h2>
+        <div class="hint">검량선에서 구한 농도(mg)와 시료량을 입력합니다. 60/25는 실험법 고정 상수로 자동 반영됩니다.</div>
+        <div><span class="fixed">고정값 60 / 25</span></div>
+        <div class="row">
+          <label>검량선 농도 (mg)<input id="tntpConc" type="number" step="0.1" value="0.02" placeholder="예: 0.02" /></label>
+          <label>시료 사용량 (mL)<input id="tntpSample" type="number" step="0.1" value="5.0" placeholder="예: 5" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcTNTP()">계산</button>
+          <button class="btn" onclick="clearCard('card-tntp')">초기화</button>
+        </div>
+        <div class="formula" id="formula-tntp">농도 = 검량선 농도 × (60 / 25) × (1000 / 시료 사용량)</div>
+        <div class="result" id="result-tntp">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-tp">
+        <h2>3) TP 전처리 없이</h2>
+        <div class="hint">함수선 또는 검량선에서 구한 농도와 샘플 사용량만 입력합니다.</div>
+        <div class="row">
+          <label>검량선 농도 (mg)<input id="tpConc" type="number" step="0.1" value="0.02" placeholder="예: 0.02" /></label>
+          <label>샘플 사용량 (mL)<input id="tpSample" type="number" step="0.1" value="5.0" placeholder="예: 5" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcTP()">계산</button>
+          <button class="btn" onclick="clearCard('card-tp')">초기화</button>
+        </div>
+        <div class="formula" id="formula-tp">농도 = 검량선 농도 × (1000 / 샘플 사용량)</div>
+        <div class="result" id="result-tp">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-fpc">
+        <h2>4) F⁻ / Phenol / CN</h2>
+        <div class="hint">함수선 농도, 증류 후 총부피, 증류 시료량, 발색에 사용한 시료량을 입력합니다.</div>
+        <div class="row">
+          <label>검량선 농도 (mg)<input id="fpcConc" type="number" step="0.1" value="0.025" placeholder="예: 0.025" /></label>
+          <label>증류 후 총부피 (mL)<input id="fpcTotal" type="number" step="0.1" value="200.0" placeholder="예: 200" /></label>
+        </div>
+        <div class="row">
+          <label>증류 시료량 (mL)<input id="fpcDistill" type="number" step="0.1" value="200.0" placeholder="예: 200" /></label>
+          <label>발색 시료량 (mL)<input id="fpcColor" type="number" step="0.1" value="0.1" placeholder="예: 0.1" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcFPC()">계산</button>
+          <button class="btn" onclick="clearCard('card-fpc')">초기화</button>
+        </div>
+        <div class="formula" id="formula-fpc">농도 = 검량선 농도 × (증류 후 총부피 / 증류 시료량) × (1000 / 발색 시료량)</div>
+        <div class="result" id="result-fpc">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-nh3">
+        <h2>5) NH3-N / Cr+6</h2>
+        <div class="hint">검량선 농도와 시료량을 입력하면 mg/L로 환산됩니다.</div>
+        <div class="row">
+          <label>검량선 농도 (mg)<input id="nh3Conc" type="number" step="0.1" value="0.4" placeholder="예: 0.4" /></label>
+          <label>시료량 (mL)<input id="nh3Sample" type="number" step="0.1" value="10.0" placeholder="예: 10" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcNH3()">계산</button>
+          <button class="btn" onclick="clearCard('card-nh3')">초기화</button>
+        </div>
+        <div class="formula" id="formula-nh3">농도 = 검량선 농도 × (1000 / 시료량)</div>
+        <div class="result" id="result-nh3">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-cl">
+        <h2>6) Cl⁻</h2>
+        <div class="hint">고정값: 0.1N AgNO3 1 mL = Cl 3.545 mg</div>
+        <div><span class="fixed">고정값 3.545</span></div>
+        <div class="row">
+          <label>AgNO3 적정량 (mL)<input id="clTitration" type="number" step="0.1" value="2.5" placeholder="예: 2.5" /></label>
+          <label>바탕시험 소비량 (mL)<input id="clBlank" type="number" step="0.1" value="0.05" placeholder="예: 0.05" /></label>
+        </div>
+        <div class="row row-1">
+          <label>시료량 (mL)<input id="clSample" type="number" step="0.1" value="2.0" placeholder="예: 2" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcCl()">계산</button>
+          <button class="btn" onclick="clearCard('card-cl')">초기화</button>
+        </div>
+        <div class="formula" id="formula-cl">Cl⁻ = (적정량 - 바탕시험량) × 3.545 × (1000 / 시료량)</div>
+        <div class="result" id="result-cl">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-normality">
+        <h2>7) N농도 적정</h2>
+        <div class="hint">N1V1 = N2V2를 사용하며, 샘플의 N농도 X를 계산한 뒤 희석배수를 곱해 최종 N농도를 표시합니다.</div>
+        <div class="row">
+          <label>표준액 농도 N1 (N)<input id="nStd" type="number" step="0.1" value="2.0" placeholder="예: 2" /></label>
+          <label>표준액 사용량 V1 (mL)<input id="nStdVol" type="number" step="0.1" value="4.0" placeholder="예: 4" /></label>
+        </div>
+        <div class="row">
+          <label>샘플량 V2 (mL)<input id="nSampleVol" type="number" step="0.1" value="10.0" placeholder="예: 10" /></label>
+          <label>샘플 희석배수<input id="nDilution" type="number" step="0.1" value="10.0" placeholder="예: 10" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcNormality()">계산</button>
+          <button class="btn" onclick="clearCard('card-normality')">초기화</button>
+        </div>
+        <div class="formula" id="formula-normality">N1 × V1 = X × V2 → X = (N1 × V1) / V2, 최종 N농도 = X × 희석배수</div>
+        <div class="result" id="result-normality">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-waste">
+        <h2>8) 폐기물 농도 계산</h2>
+        <div class="hint">용출액 농도에서 폐기물 기준 mg/kg로 환산합니다.</div>
+        <div class="row">
+          <label>시료 사용량 (g)<input id="wasteMass" type="number" step="0.1" value="0.5" placeholder="예: 0.5" /></label>
+          <label>용출액량 (mL)<input id="wasteVol" type="number" step="0.1" value="100.0" placeholder="예: 100" /></label>
+        </div>
+        <div class="row row-1">
+          <label>용출액 농도 (mg/L)<input id="wasteConc" type="number" step="0.1" value="4.0" placeholder="예: 4" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcWaste()">계산</button>
+          <button class="btn" onclick="clearCard('card-waste')">초기화</button>
+        </div>
+        <div class="formula" id="formula-waste">폐기물 농도(mg/kg) = 용출액 농도(mg/L) × (1L / 1000mL) × 용출액량(mL) / 시료량(g) × (1000g / 1kg)</div>
+        <div class="result" id="result-waste">결과가 여기에 표시됩니다.</div>
+      </section>
+
+      <section class="card" id="card-hardness">
+        <h2>9) 총경도 및 Ca/Mg 환산</h2>
+        <div class="hint">고정값: CaCO3 분자량 100g, Ca 환산계수 40/100, Mg 환산계수 24.3/100</div>
+        <div>
+          <span class="fixed">EDTA 0.01M 1mL = CaCO3 1mg</span>
+          <span class="fixed">Ca = ×0.4</span>
+          <span class="fixed">Mg = ×0.243</span>
+        </div>
+        <div class="row">
+          <label>0.01M EDTA 적정량 (mL)<input id="hardEdta" type="number" step="0.1" value="4.5" placeholder="예: 4.5" /></label>
+          <label>MgCl2 첨가량 (mL)<input id="hardMgcl2" type="number" step="0.1" value="1.0" placeholder="예: 1" /></label>
+        </div>
+        <div class="row row-1">
+          <label>시료량 (mL)<input id="hardSample" type="number" step="0.1" value="2.0" placeholder="예: 2" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="calcHardness()">계산</button>
+          <button class="btn" onclick="clearCard('card-hardness')">초기화</button>
+        </div>
+        <div class="formula" id="formula-hardness">총경도 = (EDTA 적정량 - MgCl2 첨가량) × (1000 / 시료량)</div>
+        <div class="result" id="result-hardness">결과가 여기에 표시됩니다.</div>
+      </section>
+    </div>
+
+    <div class="footer-note">
+      계산 결과는 일반적으로 소수점 셋째 자리까지 표시합니다. pH 카드의 매우 작은 농도값은 유효숫자 3자리로 표시합니다.
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function formatDecimal(value, digits = 3) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return '';
+      return n.toFixed(digits).replace(/\.0+$|(?<=\..*?)0+$/g, '');
+    }
+
+    function formatSignificant(value, sig = 3) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return '';
+      if (n === 0) return '0';
+      return Number(n.toPrecision(sig)).toString();
+    }
+
+    function num(id) {
+      return parseFloat($(id).value);
+    }
+
+    function valid(values) {
+      return values.every((v) => Number.isFinite(v));
+    }
+
+    function setResult(id, text) {
+      $(id).textContent = text;
+    }
+
+    function setFormula(id, text) {
+      $(id).textContent = text;
+    }
+
+    function updateTotalVolume() {
+      const acidVol = num('acidVol');
+      const baseVol = num('baseVol');
+      if (Number.isFinite(acidVol) && Number.isFinite(baseVol)) {
+        $('totalVolPH').value = formatDecimal(acidVol + baseVol);
+      }
+    }
+
+    function calcPH() {
+      const acid = num('acidMol');
+      const acidVol = num('acidVol');
+      const base = num('baseMol');
+      const baseVol = num('baseVol');
+
+      if (!valid([acid, acidVol, base, baseVol]) || acidVol < 0 || baseVol < 0 || acid < 0 || base < 0) {
+        setResult('result-ph', '입력값을 확인하세요.\n음수는 허용되지 않습니다.');
+        return;
+      }
+
+      const vol = acidVol + baseVol;
+      $('totalVolPH').value = Number.isFinite(vol) ? formatDecimal(vol) : '';
+
+      if (vol <= 0) {
+        setResult('result-ph', '산 부피와 알칼리 부피의 합계가\n0보다 커야 합니다.');
+        return;
+      }
+
+      if (acid === base) {
+        setFormula(
+          'formula-ph',
+          `총 부피 = ${formatSignificant(acidVol)} + ${formatSignificant(baseVol)} = ${formatSignificant(vol)} L\n` +
+          `남는 몰수 = |${formatSignificant(acid)} - ${formatSignificant(base)}| = 0 mol\n` +
+          '상태 = 완전 중화'
+        );
+
+        setResult(
+          'result-ph',
+          `결과\n총 부피 = ${formatSignificant(vol)} L\npH = 7\npOH = 7`
+        );
+        return;
+      }
+
+      const remain = Math.abs(base - acid);
+
+      if (base > acid) {
+        const oh = remain / vol;
+        const pOH = -Math.log10(oh);
+        const pH = 14 - pOH;
+
+        setFormula(
+          'formula-ph',
+          `총 부피 = ${formatSignificant(acidVol)} + ${formatSignificant(baseVol)} = ${formatSignificant(vol)} L\n` +
+          `남는 알칼리 몰수 = ${formatSignificant(base)} - ${formatSignificant(acid)} = ${formatSignificant(remain)} mol\n` +
+          `[OH-] = ${formatSignificant(remain)} / ${formatSignificant(vol)} = ${formatSignificant(oh)} M\n` +
+          `pOH = -log(${formatSignificant(oh)}) = ${formatSignificant(pOH)}\n` +
+          `pH = 14 - ${formatSignificant(pOH)} = ${formatSignificant(pH)}`
+        );
+
+        setResult(
+          'result-ph',
+          `결과\n총 부피 = ${formatSignificant(vol)} L\n남는 알칼리 몰수 = ${formatSignificant(remain)} mol\n[OH-] = ${formatSignificant(oh)} M\npOH = ${formatSignificant(pOH)}\npH = ${formatSignificant(pH)}`
+        );
+        return;
+      }
+
+      const h = remain / vol;
+      const pH = -Math.log10(h);
+      const pOH = 14 - pH;
+
+      setFormula(
+        'formula-ph',
+        `총 부피 = ${formatSignificant(acidVol)} + ${formatSignificant(baseVol)} = ${formatSignificant(vol)} L\n` +
+        `남는 산 몰수 = ${formatSignificant(acid)} - ${formatSignificant(base)} = ${formatSignificant(remain)} mol\n` +
+        `[H+] = ${formatSignificant(remain)} / ${formatSignificant(vol)} = ${formatSignificant(h)} M\n` +
+        `pH = -log(${formatSignificant(h)}) = ${formatSignificant(pH)}\n` +
+        `pOH = 14 - ${formatSignificant(pH)} = ${formatSignificant(pOH)}`
+      );
+
+      setResult(
+        'result-ph',
+        `결과\n총 부피 = ${formatSignificant(vol)} L\n남는 산 몰수 = ${formatSignificant(remain)} mol\n[H+] = ${formatSignificant(h)} M\npH = ${formatSignificant(pH)}\npOH = ${formatSignificant(pOH)}`
+      );
+    }
+
+    function calcTNTP() {
+      const c = num('tntpConc');
+      const s = num('tntpSample');
+      if (!valid([c, s]) || s <= 0) {
+        setResult('result-tntp', '입력값을 확인하세요.\n시료 사용량은 0보다 커야 합니다.');
+        return;
+      }
+      const result = c * (60 / 25) * (1000 / s);
+      setFormula(
+        'formula-tntp',
+        `농도 = ${formatDecimal(c)} × (60 / 25) × (1000 / ${formatDecimal(s)})\n= ${formatDecimal(result)} mg/L`
+      );
+      setResult('result-tntp', `결과\nTN/TP = ${formatDecimal(result)} mg/L`);
+    }
+
+    function calcTP() {
+      const c = num('tpConc');
+      const s = num('tpSample');
+      if (!valid([c, s]) || s <= 0) {
+        setResult('result-tp', '입력값을 확인하세요.\n샘플 사용량은 0보다 커야 합니다.');
+        return;
+      }
+      const result = c * (1000 / s);
+      setFormula(
+        'formula-tp',
+        `농도 = ${formatDecimal(c)} × (1000 / ${formatDecimal(s)})\n= ${formatDecimal(result)} mg/L`
+      );
+      setResult('result-tp', `결과\nTP = ${formatDecimal(result)} mg/L`);
+    }
+
+    function calcFPC() {
+      const c = num('fpcConc');
+      const total = num('fpcTotal');
+      const distill = num('fpcDistill');
+      const color = num('fpcColor');
+      if (!valid([c, total, distill, color]) || distill <= 0 || color <= 0) {
+        setResult('result-fpc', '입력값을 확인하세요.\n증류 시료량과 발색 시료량은 0보다 커야 합니다.');
+        return;
+      }
+      const result = c * (total / distill) * (1000 / color);
+      setFormula(
+        'formula-fpc',
+        `농도 = ${formatDecimal(c)} × (${formatDecimal(total)} / ${formatDecimal(distill)}) × (1000 / ${formatDecimal(color)})\n= ${formatDecimal(result)} mg/L`
+      );
+      setResult('result-fpc', `결과\nF⁻ / Phenol / CN = ${formatDecimal(result)} mg/L`);
+    }
+
+    function calcNH3() {
+      const c = num('nh3Conc');
+      const s = num('nh3Sample');
+      if (!valid([c, s]) || s <= 0) {
+        setResult('result-nh3', '입력값을 확인하세요.\n시료량은 0보다 커야 합니다.');
+        return;
+      }
+      const result = c * (1000 / s);
+      setFormula(
+        'formula-nh3',
+        `농도 = ${formatDecimal(c)} × (1000 / ${formatDecimal(s)})\n= ${formatDecimal(result)} mg/L`
+      );
+      setResult('result-nh3', `결과\nNH3-N / Cr+6 = ${formatDecimal(result)} mg/L`);
+    }
+
+    function calcCl() {
+      const t = num('clTitration');
+      const b = num('clBlank');
+      const s = num('clSample');
+      if (!valid([t, b, s]) || s <= 0) {
+        setResult('result-cl', '입력값을 확인하세요.\n시료량은 0보다 커야 합니다.');
+        return;
+      }
+      const result = (t - b) * 3.545 * (1000 / s);
+      setFormula(
+        'formula-cl',
+        `Cl⁻ = (${formatDecimal(t)} - ${formatDecimal(b)}) × 3.545 × (1000 / ${formatDecimal(s)})\n= ${formatDecimal(result)} mg/L`
+      );
+      setResult('result-cl', `결과\nCl⁻ = ${formatDecimal(result)} mg/L`);
+    }
+
+    function calcNormality() {
+      const n1 = num('nStd');
+      const v1 = num('nStdVol');
+      const v2 = num('nSampleVol');
+      const dilution = num('nDilution');
+      if (!valid([n1, v1, v2, dilution]) || v2 <= 0 || dilution <= 0) {
+        setResult('result-normality', '입력값을 확인하세요.\n샘플량과 희석배수는 0보다 커야 합니다.');
+        return;
+      }
+      const x = (n1 * v1) / v2;
+      const finalN = x * dilution;
+      setFormula(
+        'formula-normality',
+        `${formatDecimal(n1)} × ${formatDecimal(v1)} = X × ${formatDecimal(v2)}\n` +
+        `X = (${formatDecimal(n1)} × ${formatDecimal(v1)}) / ${formatDecimal(v2)} = ${formatDecimal(x)} N\n` +
+        `최종 N농도 = ${formatDecimal(x)} × ${formatDecimal(dilution)} = ${formatDecimal(finalN)} N`
+      );
+      setResult(
+        'result-normality',
+        `결과\n샘플 N농도 X = ${formatDecimal(x)} N\n최종 N농도 = ${formatDecimal(finalN)} N`
+      );
+    }
+
+    function calcWaste() {
+      const mass = num('wasteMass');
+      const vol = num('wasteVol');
+      const conc = num('wasteConc');
+      if (!valid([mass, vol, conc]) || mass <= 0) {
+        setResult('result-waste', '입력값을 확인하세요.\n시료 사용량은 0보다 커야 합니다.');
+        return;
+      }
+      const totalMg = conc * (vol / 1000);
+      const mgPerG = totalMg / mass;
+      const mgPerKg = mgPerG * 1000;
+      setFormula(
+        'formula-waste',
+        `${formatDecimal(conc)} mg/L × (1L / 1000mL) × ${formatDecimal(vol)} mL / ${formatDecimal(mass)} g × (1000g / 1kg)\n= ${formatDecimal(mgPerKg)} mg/kg`
+      );
+      setResult(
+        'result-waste',
+        `결과\n폐기물 농도 = ${formatDecimal(mgPerKg)} mg/kg\n중간값 = ${formatDecimal(totalMg)} mg\n${formatDecimal(mgPerG)} mg/g`
+      );
+    }
+
+    function calcHardness() {
+      const edta = num('hardEdta');
+      const mgcl2 = num('hardMgcl2');
+      const sample = num('hardSample');
+      if (!valid([edta, mgcl2, sample]) || sample <= 0) {
+        setResult('result-hardness', '입력값을 확인하세요.\n시료량은 0보다 커야 합니다.');
+        return;
+      }
+      const hardness = (edta - mgcl2) * (1000 / sample);
+      const ca = hardness * 0.4;
+      const mg = hardness * 0.243;
+      setFormula(
+        'formula-hardness',
+        `총경도 = (${formatDecimal(edta)} - ${formatDecimal(mgcl2)}) × (1000 / ${formatDecimal(sample)})\n` +
+        `= ${formatDecimal(hardness)} mg/L as CaCO3\n` +
+        `Ca 환산 = ${formatDecimal(ca)} mg/L\n` +
+        `Mg 환산 = ${formatDecimal(mg)} mg/L`
+      );
+      setResult(
+        'result-hardness',
+        `결과\n총경도 = ${formatDecimal(hardness)} mg/L as CaCO3\nCa = ${formatDecimal(ca)} mg/L\nMg = ${formatDecimal(mg)} mg/L`
+      );
+    }
+
+    function calculateAll() {
+      calcPH();
+      calcTNTP();
+      calcTP();
+      calcFPC();
+      calcNH3();
+      calcCl();
+      calcNormality();
+      calcWaste();
+      calcHardness();
+    }
+
+    function clearCard(cardId) {
+      const card = $(cardId);
+      card.querySelectorAll('input').forEach((input) => {
+        if (input.hasAttribute('readonly')) {
+          input.value = '';
+        } else {
+          input.value = input.defaultValue || '';
+        }
+      });
+      if (cardId === 'card-ph') updateTotalVolume();
+      const result = card.querySelector('.result');
+      const formula = card.querySelector('.formula');
+      if (result) result.textContent = '결과가 여기에 표시됩니다.';
+      if (formula) {
+        const defaults = {
+          'card-ph': '계산식: 남는 몰수 = |알칼리 - 산|, 농도 = 남는 몰수 / 총 부피',
+          'card-tntp': '농도 = 검량선 농도 × (60 / 25) × (1000 / 시료 사용량)',
+          'card-tp': '농도 = 검량선 농도 × (1000 / 샘플 사용량)',
+          'card-fpc': '농도 = 검량선 농도 × (증류 후 총부피 / 증류 시료량) × (1000 / 발색 시료량)',
+          'card-nh3': '농도 = 검량선 농도 × (1000 / 시료량)',
+          'card-cl': 'Cl⁻ = (적정량 - 바탕시험량) × 3.545 × (1000 / 시료량)',
+          'card-normality': 'N1 × V1 = X × V2 → X = (N1 × V1) / V2, 최종 N농도 = X × 희석배수',
+          'card-waste': '폐기물 농도(mg/kg) = 용출액 농도(mg/L) × (1L / 1000mL) × 용출액량(mL) / 시료량(g) × (1000g / 1kg)',
+          'card-hardness': '총경도 = (EDTA 적정량 - MgCl2 첨가량) × (1000 / 시료량)'
+        };
+        formula.textContent = defaults[cardId] || formula.textContent;
+      }
+    }
+
+    function resetAll() {
+      document.querySelectorAll('input').forEach((input) => {
+        if (input.hasAttribute('readonly')) {
+          input.value = '';
+        } else {
+          input.value = input.defaultValue || '';
+        }
+      });
+      updateTotalVolume();
+      document.querySelectorAll('.result').forEach((el) => {
+        el.textContent = '결과가 여기에 표시됩니다.';
+      });
+      $('formula-ph').textContent = '계산식: 남는 몰수 = |알칼리 - 산|, 농도 = 남는 몰수 / 총 부피';
+      $('formula-tntp').textContent = '농도 = 검량선 농도 × (60 / 25) × (1000 / 시료 사용량)';
+      $('formula-tp').textContent = '농도 = 검량선 농도 × (1000 / 샘플 사용량)';
+      $('formula-fpc').textContent = '농도 = 검량선 농도 × (증류 후 총부피 / 증류 시료량) × (1000 / 발색 시료량)';
+      $('formula-nh3').textContent = '농도 = 검량선 농도 × (1000 / 시료량)';
+      $('formula-cl').textContent = 'Cl⁻ = (적정량 - 바탕시험량) × 3.545 × (1000 / 시료량)';
+      $('formula-normality').textContent = 'N1 × V1 = X × V2 → X = (N1 × V1) / V2, 최종 N농도 = X × 희석배수';
+      $('formula-waste').textContent = '폐기물 농도(mg/kg) = 용출액 농도(mg/L) × (1L / 1000mL) × 용출액량(mL) / 시료량(g) × (1000g / 1kg)';
+      $('formula-hardness').textContent = '총경도 = (EDTA 적정량 - MgCl2 첨가량) × (1000 / 시료량)';
+    }
+
+    function runSelfTests() {
+      console.assert(formatSignificant(0.00001667) === '0.0000167', 'formatSignificant small number failed');
+      console.assert(formatDecimal(9.6) === '9.6', 'formatDecimal failed');
+      console.assert(Math.abs((0.02 * (60 / 25) * (1000 / 5)) - 9.6) < 1e-9, 'TN/TP formula failed');
+      console.assert(Math.abs((0.02 * (1000 / 5)) - 4) < 1e-9, 'TP formula failed');
+      console.assert(Math.abs((0.025 * (200 / 200) * (1000 / 0.1)) - 250) < 1e-9, 'F/Phenol/CN formula failed');
+      console.assert(Math.abs((0.4 * (1000 / 10)) - 40) < 1e-9, 'NH3/Cr+6 formula failed');
+      console.assert(Math.abs((((2.5 - 0.05) * 3.545) * (1000 / 2)) - 4342.625) < 1e-9, 'Cl formula failed');
+      console.assert(Math.abs((((2 * 4) / 10) * 10) - 8) < 1e-9, 'Normality formula failed');
+      console.assert(Math.abs(((4 * (100 / 1000)) / 0.5 * 1000) - 800) < 1e-9, 'Waste formula failed');
+      console.assert(Math.abs((((4.5 - 1.0) * (1000 / 2)) * 0.4) - 700) < 1e-9, 'Hardness Ca conversion failed');
+      console.assert(Math.abs((((4.5 - 1.0) * (1000 / 2)) * 0.243) - 425.25) < 1e-9, 'Hardness Mg conversion failed');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ['acidVol', 'baseVol'].forEach((id) => {
+        $(id).addEventListener('input', updateTotalVolume);
+      });
+      updateTotalVolume();
+      runSelfTests();
+    });
+  </script>
+</body>
+</html>
